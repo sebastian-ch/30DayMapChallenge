@@ -1,0 +1,75 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            bottom: 0;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+        // create Leaflet map
+        var map = L.map('map', {
+            zoomSnap: .2,
+            zoomControl: false,
+            center: [51.059, 13.745],
+            zoom: 13
+        });
+
+        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy;<a href="https://carto.com/attribution">CARTO</a>'
+        }).addTo(map);
+
+
+        //add geojson data here
+        drawMap()
+
+
+        function drawMap() {
+
+            const bbounds = [13.671636,51.015915,13.799972,51.085410];
+            const cellSide = 0.15;
+
+            const hexgrid = turf.hexGrid(bbounds, cellSide);
+
+           var hexLayer = L.geoJson(hexgrid, {
+               onEachFeature: getArea
+           }).addTo(map);
+
+
+           function getArea(x) {
+                console.log(turf.area(x))
+           }
+
+           map.fitBounds(hexLayer.getBounds());
+
+        }
+    </script>
+</body>
+
+</html>

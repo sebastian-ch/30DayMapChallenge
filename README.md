@@ -12,7 +12,7 @@
 
 * Day 6
 
-* Day 7
+* [Day 7](https://sebastian-ch.github.io/30DayMapChallenge/day7/) (using leaflet)
 
 * Day 8
 

@@ -1,73 +1,139 @@
-<!doctype html>
-
-<html lang="en">
+<html>
 
 <head>
     <meta charset="utf-8">
-    <title>Leaflet</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <title>D3 Template</title>
+
+    <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css">
+
     <style>
         body {
-            font-family: sans-serif;
-            margin: 0;
             padding: 0;
+            margin: 0;
+            background: whitesmoke;
+            font-family: Montserrat, sans-serif;
+        }
+
+        .states {
+            fill: #d3d3d3;
+        }
+
+        .county {
+            stroke: darkgray;
+            stroke-width: 1.4;
+            fill-opacity: 0;
+        }
+
+        h1 {
+            width: 80%;
+            margin: 10px auto 10px auto;
+            left: 20px;
+            top: 10px;
+            font-size: 2em;
+            font-weight: 100;
+            color: #005DAA;
         }
 
         #map {
-            position: absolute;
-            width: 100%;
-            top: 0;
-            bottom: 0;
+            width: 80%;
+            margin: 10px auto 10px auto;
+            border: 1px solid #d3d3d3;
+            text-align: center;
         }
     </style>
-
 </head>
 
 <body>
 
+    <h1>US Counties</h1>
+
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
-    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
 
     <script>
-        // create Leaflet map
-        var map = L.map('map', {
-            zoomSnap: .2,
-            zoomControl: false,
-            center: [51.059, 13.745],
-            zoom: 13
+        d3.select(window).on('resize', resize);
+
+        var margin = {
+                top: 10,
+                left: 10,
+                bottom: 10,
+                right: 10
+            },
+
+            width = parseInt(d3.select('#map').style('width')),
+            width = width - margin.left - margin.right,
+            mapRatio = .5,
+            //height = width * mapRatio;
+            height = 600;
+
+        var svg = d3.select("#map")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var files = ["/geojsons/states.geojson", "/geojsons/us-counties-topo.json"];
+        var promises = [];
+
+
+        files.forEach(function (url) {
+            promises.push(d3.json(url))
         });
 
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy;<a href="https://carto.com/attribution">CARTO</a>'
-        }).addTo(map);
+        Promise.all(promises).then(function (values) {
+            makeMap(values[0], values[1])
+        });
 
 
-        //add geojson data here
-        drawMap()
+        function makeMap(states, counties) {
 
+            console.log(states);
 
-        function drawMap() {
+            var projection = d3.geoAlbersUsa()
+                .fitSize([width - 50, height - 50], states);
 
-            const bbounds = [13.671636,51.015915,13.799972,51.085410];
-            const cellSide = 0.15;
+            var geoPath = d3.geoPath()
+                .projection(projection);
 
-            const hexgrid = turf.hexGrid(bbounds, cellSide);
+            svg.append("g")
+                .selectAll("path")
+                .data(states.features)
+                .enter()
+                .append("path")
+                .attr("d", geoPath)
+                .attr("class", "states");
 
-           var hexLayer = L.geoJson(hexgrid, {
-               onEachFeature: getArea
-           }).addTo(map);
+            svg.append('g')
+                .selectAll('path')
+                .data(topojson.feature(counties, counties.objects.counties).features)
+                .enter()
+                .append('path')
+                .attr("d", geoPath)
+                .attr('class', 'county')
+        }
 
+        //update size on window resize
+        function resize() {
 
-           function getArea(x) {
-                console.log(turf.area(x))
-           }
+            width = parseInt(d3.select('#map').style('width'));
+            width = width - margin.left - margin.right;
+            height = width * mapRatio;
 
-           map.fitBounds(hexLayer.getBounds());
+            // update projection
+            projection
+                //.translate([width / 2, height / 2])
+                //.scale(width);
+                .fitSize([width - 50, height - 50], states);
 
+            // resize the map container
+            svg
+                .style('width', width + 'px')
+                .style('height', height + 'px');
+
+            // resize the data
+            svg.selectAll('.states').attr('d', geoPath);
+            svg.selectAll('.county').attr('d', geoPath);
         }
     </script>
 </body>

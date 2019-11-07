@@ -1,0 +1,148 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h2 {
+            position: relative;
+            color: darkred;
+            width: 80%;
+            margin: 10px auto 10px auto;
+            font-size: 40px;
+            z-index: 1000;
+        }
+
+        #map {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            bottom: 0;
+            background-color: #ff726f;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <h2>D-red-sden</h2>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+        // create Leaflet map
+        var map = L.map('map', {
+            zoomSnap: .2,
+            zoomControl: false,
+            center: [21.452, -157.958],
+            zoom: 11
+        });
+
+        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy;<a href="https://carto.com/attribution">CARTO</a>'
+        }); //.addTo(map);
+
+
+        const files = [
+            'geojsons/dbounds.geojson',
+            'geojsons/river.geojson',
+            'geojsons/roads.geojson'
+        ];
+
+        const promises = [];
+
+        files.forEach(function (url) {
+            promises.push(d3.json(url))
+        });
+
+        Promise.all(promises).then(function(values){
+
+            drawMap(values);
+        })
+
+
+        
+
+        function drawMap(data) {
+
+            var dd = L.geoJson(data[0], {
+                style: {
+                    fillOpacity: 0,
+                    color: 'red'
+                }
+            }).addTo(map);
+            var river = L.geoJson(data[1], {
+                style: {
+                    opacity: 1,
+                    color: 'red',
+                    fillColor: 'red',
+                    weight: 5,
+                    fillOpacity: 1
+                }
+            }).addTo(map);
+            var roads = L.geoJson(data[2], {
+                style: function (feature) {
+                    return {
+                        weight: getWeight(feature.properties["highway"]),
+                        color: getColor(feature.properties["highway"])
+                    }
+                }
+                
+            }).addTo(map);
+
+
+
+            function getWeight(feature) {
+
+                if (feature == "primary") {
+                    return '1'
+                } else if (feature == "secondary") {
+                    return '0.8'
+                } else if (feature == "motorway") {
+                    return '1.2'
+                } else {
+                    return '0.6'
+                }
+
+            }
+
+            function getColor(feature){
+
+                if (feature == "primary") {
+                    return '#fb6a4a'
+                } else if (feature == "secondary") {
+                    return '#fcae91'
+                } else if (feature == "motorway") {
+                    return '#cb181d'
+                } else {
+                    return '#fee5d9'
+                }
+
+               
+            }
+            map.fitBounds(dd.getBounds());
+
+
+
+
+
+
+
+        }
+    </script>
+</body>
+
+</html>
